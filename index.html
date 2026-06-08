@@ -132,6 +132,27 @@ input[type=file]{display:none}
 .setup-card a{color:#0F6E56;font-weight:700;word-break:break-all}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{animation:spin .8s linear infinite;display:inline-block}
+/* fixas */
+.fixa-card{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.05);margin:0 1rem .75rem}
+.fixa-item{display:flex;align-items:center;gap:11px;padding:12px 1rem;border-bottom:1px solid #F2F1EE;transition:background .15s}
+.fixa-item:last-child{border-bottom:none}
+.fixa-item.paga{opacity:.45}
+.fixa-ico{width:40px;height:40px;border-radius:12px;background:#F0F9F6;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.fixa-info{flex:1;min-width:0}
+.fixa-nome{font-size:13px;font-weight:700;color:#1a1a1a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fixa-meta{font-size:11px;color:#bbb;margin-top:1px}
+.fixa-right{display:flex;flex-direction:column;align-items:flex-end;gap:5px;flex-shrink:0}
+.fixa-val{font-size:14px;font-weight:700;font-family:'DM Mono',monospace;color:#C0392B}
+.fixa-acts{display:flex;gap:4px;align-items:center}
+.badge-paga{font-size:10px;font-weight:700;background:#E8F7F2;color:#0F6E56;padding:2px 8px;border-radius:50px}
+.badge-vence{font-size:10px;font-weight:700;background:#FEF0EE;color:#C0392B;padding:2px 8px;border-radius:50px}
+.badge-ok{font-size:10px;font-weight:700;background:#FFF8E8;color:#B7860B;padding:2px 8px;border-radius:50px}
+.pix-btn{padding:4px 10px;border-radius:8px;border:1.5px solid #1D9E75;background:#E8F7F2;color:#0F6E56;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.pix-btn:active{transform:scale(.95)}
+.resumo-fixas{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 1rem .75rem}
+.rf-card{background:#fff;border-radius:14px;padding:.8rem .7rem;box-shadow:0 1px 4px rgba(0,0,0,.05);text-align:center}
+.rf-lbl{font-size:9px;color:#999;text-transform:uppercase;letter-spacing:.05em;font-weight:700;margin-bottom:4px}
+.rf-val{font-size:15px;font-weight:700;letter-spacing:-.3px}
 </style>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -278,12 +299,65 @@ input[type=file]{display:none}
   </div>
 </div>
 
+  <!-- FIXAS -->
+  <div class="tab-content" id="tab-fixas">
+    <div style="padding:.75rem 0 0">
+      <div class="resumo-fixas" id="fixas-resumo">
+        <div class="rf-card"><div class="rf-lbl">Total</div><div class="rf-val" id="fx-total">R$0</div></div>
+        <div class="rf-card"><div class="rf-lbl">Pagas</div><div class="rf-val" id="fx-pagas" style="color:#0F6E56">R$0</div></div>
+        <div class="rf-card"><div class="rf-lbl">A pagar</div><div class="rf-val" id="fx-apagar" style="color:#C0392B">R$0</div></div>
+      </div>
+      <div class="fixa-card" id="fixas-list"></div>
+      <div class="add-card" style="margin-top:.5rem">
+        <h3><span class="ico">📌</span> Nova conta fixa</h3>
+        <div class="irow">
+          <input type="text" id="fx-nome" placeholder="Nome (ex: Aluguel, Netflix…)" style="flex:2">
+          <input type="text" id="fx-val" placeholder="R$" inputmode="decimal" style="flex:1">
+        </div>
+        <div class="irow">
+          <select id="fx-dia" style="flex:1">
+            <option value="">Vence dia…</option>
+            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option><option value="11">11</option><option value="12">12</option><option value="13">13</option><option value="14">14</option><option value="15">15</option><option value="16">16</option><option value="17">17</option><option value="18">18</option><option value="19">19</option><option value="20">20</option><option value="21">21</option><option value="22">22</option><option value="23">23</option><option value="24">24</option><option value="25">25</option><option value="26">26</option><option value="27">27</option><option value="28">28</option><option value="29">29</option><option value="30">30</option><option value="31">31</option>
+          </select>
+          <select id="fx-ico" style="flex:1" onchange="toggleCartaoSelect(this.value)">
+            <option value="🏠">🏠 Moradia</option>
+            <option value="💡">💡 Energia</option>
+            <option value="💧">💧 Água</option>
+            <option value="📱">📱 Celular</option>
+            <option value="🌐">🌐 Internet</option>
+            <option value="🏦">🏦 Financiamento</option>
+            <option value="🎮">🎮 Lazer</option>
+            <option value="🏥">🏥 Saúde</option>
+            <option value="🚗">🚗 Transporte</option>
+            <option value="📚">📚 Educação</option>
+            <option value="💳">💳 Cartão 3ºs</option>
+          </select>
+        </div>
+        <input class="ifull" type="text" id="fx-pix" placeholder="Chave PIX ou link do boleto (opcional)">
+        <div id="cartao-select-wrap" style="display:none;margin-bottom:10px">
+          <select id="fx-cartao" style="width:100%">
+            <option value="Jo">💳 Jo</option>
+            <option value="Mãe May">💳 Mãe May</option>
+            <option value="Mãe Daniel">💳 Mãe Daniel</option>
+          </select>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-s" onclick="clearFixaForm()">✕</button>
+          <button class="btn btn-p" onclick="addFixa()">✓ Adicionar</button>
+        </div>
+        <div class="status" id="fx-status"></div>
+      </div>
+      <div style="height:1rem"></div>
+    </div>
+  </div>
+
 <!-- NAV -->
 <div class="bottom-nav">
   <div class="nav-tab active" onclick="switchTab('dashboard',this)"><span class="nico">🏠</span>Painel</div>
   <div class="nav-tab" onclick="switchTab('add',this)"><span class="nico">➕</span>Lançar</div>
   <div class="nav-tab" onclick="switchTab('history',this)"><span class="nico">📋</span>Extrato</div>
   <div class="nav-tab" onclick="switchTab('report',this)"><span class="nico">📊</span>Relatório</div>
+  <div class="nav-tab" onclick="switchTab('fixas',this)"><span class="nico">📌</span>Fixas</div>
 </div>
 
 <!-- EDIT MODAL -->
@@ -568,6 +642,7 @@ function switchTab(id, el) {
   if (el) el.classList.add('active');
   if (id==='history') renderHistory();
   if (id==='report') renderReport();
+  if (id==='fixas') renderFixas();
 }
 
 // ── DATA ──
@@ -848,6 +923,186 @@ async function genReport(e) {
   btn.innerHTML='✨ Análise inteligente com IA'; btn.disabled=false;
 }
 
+// ── CONTAS FIXAS ──
+const FX_KEY = 'finduo-fixas';
+const DEFAULT_FIXAS = [
+  { id:'fx_energia',    nome:'Energia Elétrica', val:0, dia:10, ico:'💡', pix:'', paga:false, addedBy:'May' },
+  { id:'fx_celular',    nome:'Plano de Celular',  val:0, dia:10, ico:'📱', pix:'', paga:false, addedBy:'May' },
+  { id:'fx_financ',     nome:'Financiamento',     val:0, dia:10, ico:'🏦', pix:'', paga:false, addedBy:'May' },
+  { id:'fx_aluguel',    nome:'Aluguel',            val:0, dia:10, ico:'🏠', pix:'', paga:false, addedBy:'May' },
+  { id:'fx_cartao_jo',  nome:'Cartão - Jo',        val:0, dia:10, ico:'💳', pix:'', paga:false, addedBy:'May', cartao:true },
+  { id:'fx_cartao_maemay', nome:'Cartão - Mãe May',    val:0, dia:10, ico:'💳', pix:'', paga:false, addedBy:'May', cartao:true },
+  { id:'fx_cartao_maedan', nome:'Cartão - Mãe Daniel', val:0, dia:10, ico:'💳', pix:'', paga:false, addedBy:'May', cartao:true },
+];
+const saved = JSON.parse(localStorage.getItem(FX_KEY) || 'null');
+let fixas = saved !== null ? saved : DEFAULT_FIXAS;
+
+async function fixasSave() {
+  localStorage.setItem(FX_KEY, JSON.stringify(fixas));
+  if (db) {
+    try { await db.collection('finduo').doc('fixas').set({ data: fixas }); } catch(e){}
+  }
+}
+
+async function fixasLoad() {
+  if (db) {
+    try {
+      const doc = await db.collection('finduo').doc('fixas').get();
+      if (doc.exists && Array.isArray(doc.data().data)) return doc.data().data;
+    } catch(e){}
+  }
+  return JSON.parse(localStorage.getItem(FX_KEY) || '[]');
+}
+
+function toggleCartaoSelect(val) {
+  document.getElementById('cartao-select-wrap').style.display = val === '💳' ? 'block' : 'none';
+}
+
+function addFixa() {
+  const ico = document.getElementById('fx-ico').value;
+  const isCartao = ico === '💳';
+  const cartaoPessoa = isCartao ? document.getElementById('fx-cartao').value : null;
+  const nomeBase = document.getElementById('fx-nome').value.trim();
+  const nome = isCartao && !nomeBase ? 'Cartão - ' + cartaoPessoa : nomeBase;
+  const val = parseFloat(document.getElementById('fx-val').value.replace(',','.'));
+  const dia = document.getElementById('fx-dia').value;
+  const pix = document.getElementById('fx-pix').value.trim();
+  if (!nome || !val || !dia) { showStatus('fx-status','Preencha nome, valor e dia.','err'); return; }
+  const fixa = { id: Date.now()+'_fx', nome, val, dia: parseInt(dia), ico, pix, paga: false, addedBy: currentUser, cartao: isCartao, cartaoPessoa };
+  fixas.push(fixa);
+  fixasSave();
+  renderFixas();
+  clearFixaForm();
+  showStatus('fx-status','Conta adicionada! ✓','ok');
+}
+
+function togglePaga(id) {
+  const f = fixas.find(f=>f.id===id);
+  if (!f) return;
+  f.paga = !f.paga;
+  fixasSave();
+  // Auto-lançar como transação se marcar como paga
+  if (f.paga) {
+    const today = new Date().toISOString().split('T')[0];
+    const txn = { id: Date.now()+'_'+Math.random().toString(36).slice(2), user: currentUser,
+      type: 'expense', amount: f.val, description: f.nome, category: 'Casa', date: today };
+    transactions.push(txn);
+    lastHash = hash(transactions);
+    dbSave();
+    updateAll();
+    showToast(`${f.nome} marcada como paga e lançada! ✓`);
+  }
+  renderFixas();
+}
+
+function delFixa(id) {
+  if (!confirm('Remover esta conta fixa?')) return;
+  fixas = fixas.filter(f=>f.id!==id);
+  fixasSave();
+  renderFixas();
+}
+
+function pagarPix(pix) {
+  if (!pix) return;
+  if (pix.startsWith('http')) {
+    window.open(pix, '_blank');
+  } else {
+    navigator.clipboard.writeText(pix).then(() => showToast('Chave PIX copiada! ✓'));
+  }
+}
+
+function clearFixaForm() {
+  document.getElementById('fx-nome').value='';
+  document.getElementById('fx-val').value='';
+  document.getElementById('fx-dia').value='';
+  document.getElementById('fx-pix').value='';
+  document.getElementById('cartao-select-wrap').style.display='none';
+}
+
+function editFixaVal(id) {
+  const f = fixas.find(f=>f.id===id);
+  if (!f) return;
+  const novo = prompt('Valor de ' + f.nome + ' (R$):', f.val || '');
+  if (novo === null) return;
+  const val = parseFloat(novo.replace(',','.'));
+  if (isNaN(val) || val < 0) { alert('Valor inválido.'); return; }
+  f.val = val;
+  fixasSave();
+  renderFixas();
+}
+
+function editFixaDia(id) {
+  const f = fixas.find(f=>f.id===id);
+  if (!f) return;
+  const novo = prompt('Dia do vencimento de ' + f.nome + ':', f.dia || '');
+  if (novo === null) return;
+  const dia = parseInt(novo);
+  if (isNaN(dia) || dia < 1 || dia > 31) { alert('Dia inválido.'); return; }
+  f.dia = dia;
+  fixasSave();
+  renderFixas();
+}
+
+function renderFixas() {
+  const today = new Date();
+  const sorted = [...fixas].sort((a,b) => a.dia - b.dia);
+  const total = fixas.reduce((s,f)=>s+f.val,0);
+  const pagas = fixas.filter(f=>f.paga).reduce((s,f)=>s+f.val,0);
+  document.getElementById('fx-total').textContent = fmtS(total);
+  document.getElementById('fx-pagas').textContent = fmtS(pagas);
+  document.getElementById('fx-apagar').textContent = fmtS(total-pagas);
+
+  const el = document.getElementById('fixas-list');
+  if (!fixas.length) {
+    el.innerHTML='<div class="empty" style="background:#fff;border-radius:14px"><span class="eico">📌</span><p>Nenhuma conta fixa ainda</p></div>';
+    return;
+  }
+  el.innerHTML = sorted.map(f => {
+    const diasRestantes = f.dia - today.getDate();
+    let badge = '';
+    if (f.paga) badge = '<span class="badge-paga">✓ Paga</span>';
+    else if (diasRestantes < 0) badge = '<span class="badge-vence">Vencida</span>';
+    else if (diasRestantes <= 3) badge = `<span class="badge-vence">Vence em ${diasRestantes}d</span>`;
+    else badge = `<span class="badge-ok">Dia ${f.dia}</span>`;
+
+    const pixBtn = f.pix ? `<button class="pix-btn" onclick="pagarPix('${f.pix.replace(/'/g,"\'")}')">
+      ${f.pix.startsWith('http') ? '🔗 Boleto' : '📋 PIX'}</button>` : '';
+
+    return `<div class="fixa-item${f.paga?' paga':''}">
+      <div class="fixa-ico">${f.ico}</div>
+      <div class="fixa-info">
+        <div class="fixa-nome">${f.nome}${f.cartaoPessoa ? ' <span style="font-size:10px;background:#EEF2FF;color:#3B5FDB;padding:1px 6px;border-radius:50px;font-weight:700">' + f.cartaoPessoa + '</span>' : ''}</div>
+        <div class="fixa-meta" onclick="editFixaDia('${f.id}')" style="cursor:pointer" title="Toque para editar vencimento">${badge}</div>
+      </div>
+      <div class="fixa-right">
+        <div class="fixa-val" onclick="editFixaVal('${f.id}')" title="Toque para editar valor" style="cursor:pointer">
+          ${f.val > 0 ? '-'+fmt(f.val) : '<span style=\'color:#bbb;font-size:12px\'>+ valor</span>'}
+        </div>
+        <div class="fixa-acts">
+          ${pixBtn}
+          <button class="txn-btn ${f.paga?'tbtn-e':'tbtn-e'}" style="${f.paga?'background:#E8F7F2;color:#0F6E56':''}" onclick="togglePaga('${f.id}')" title="${f.paga?'Desmarcar':'Marcar como paga'}">${f.paga?'↩':'✓'}</button>
+          <button class="txn-btn tbtn-d" onclick="delFixa('${f.id}')" title="Remover">🗑️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// Load fixas from Firebase on startup
+async function initFixas() {
+  fixas = await fixasLoad();
+  renderFixas();
+  // Listen for realtime changes
+  if (db) {
+    db.collection('finduo').doc('fixas').onSnapshot(doc => {
+      if (doc.exists && Array.isArray(doc.data().data)) {
+        fixas = doc.data().data;
+        renderFixas();
+      }
+    });
+  }
+}
+
 // ── EXPORT ──
 function exportCSV() {
   if (!transactions.length) { alert('Nenhum lançamento para exportar.'); return; }
@@ -865,6 +1120,7 @@ function exportCSV() {
 
 // ── INIT ──
 setToday();
+initFixas();
 if (localStorage.getItem('finduo-fb-config')) {
   const el = document.getElementById('fb-banner');
   if (el) el.style.display = 'none';
