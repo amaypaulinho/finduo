@@ -174,7 +174,7 @@ input[type=file]{display:none}
     <div style="padding:.75rem 0 0">
       <!-- Sheet config banner -->
       <div class="setup-card" id="setup-banner">
-        <p>⚙️ <strong>Para sincronizar com o Google Sheets</strong>, você precisa criar um Web App via Google Apps Script. <a href="https://docs.google.com/spreadsheets/d/1KRpfUNR2uDtOSd6YQ3MEdZV8P3WbUiZNIbd-gSPrGPk/edit" target="_blank">Abrir planilha criada →</a><br><br>
+        <p>⚙️ <strong>Para sincronizar com o Google Sheets</strong>, você precisa criar um Web App via Google Apps Script. <a href="https://docs.google.com/spreadsheets/d/12vol5GcsrMrPWSCxvy8Ct_CDWJH_rmflAfAhJMfE6Js/edit?gid=0#gid=0" target="_blank">Abrir planilha criada →</a><br><br>
         1. Na planilha, vá em <strong>Extensões → Apps Script</strong><br>
         2. Cole o código fornecido no campo abaixo e publique como Web App<br>
         3. Cole a URL do Web App no campo abaixo</p>
@@ -310,7 +310,7 @@ input[type=file]{display:none}
 const APPS_SCRIPT = `function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var ss = SpreadsheetApp.openById("12vol5GcsrMrPWSCxvy8Ct_CDWJH_rmflAfAhJMfE6Js");
     
     // Cria/pega aba Lançamentos
     var sheet = ss.getSheetByName('Lançamentos') || ss.insertSheet('Lançamentos');
@@ -356,7 +356,8 @@ document.getElementById('apps-script-code').textContent = APPS_SCRIPT;
 // ── CONFIG ──
 const DB_KEY = 'finduo-shared-db';
 const WH_KEY = 'finduo-webhook-url';
-let webhookUrl = localStorage.getItem(WH_KEY) || '';
+const DEFAULT_WEBHOOK = 'https://script.google.com/macros/s/AKfycbwWnBcaTr2Zgfp-7hSStrYvea8K0b4dyaJAVA-utRVhcoRQ5dsaDMF4NCwOadRuvpAXNA/exec';
+let webhookUrl = localStorage.getItem(WH_KEY) || DEFAULT_WEBHOOK;
 let currentUser = 'May';
 let transactions = [];
 let histFilter = 'all';
@@ -366,9 +367,10 @@ let uploadedFile = null;
 let editingId = null;
 let lastHash = '';
 
-// Show/hide setup banner
-if (webhookUrl) document.getElementById('setup-banner').style.display = 'none';
-if (webhookUrl) document.getElementById('webhook-url').value = webhookUrl;
+// URL já pré-configurada, banner oculto
+document.getElementById('setup-banner').style.display = 'none';
+document.getElementById('webhook-url').value = webhookUrl;
+localStorage.setItem(WH_KEY, webhookUrl);
 
 function saveWebhook() {
   const url = document.getElementById('webhook-url').value.trim();
