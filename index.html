@@ -1065,7 +1065,7 @@ function renderFixas() {
     else if (diasRestantes <= 3) badge = `<span class="badge-vence">Vence em ${diasRestantes}d</span>`;
     else badge = `<span class="badge-ok">Dia ${f.dia}</span>`;
 
-    const pixBtn = f.pix ? `<button class="pix-btn" onclick="pagarPix('${f.pix.replace(/'/g,"\'")}')">
+    const pixSafe = (f.pix || '').replace(/'/g, "\'"); const pixBtn = f.pix ? `<button class="pix-btn" onclick="pagarPix('${pixSafe}')">
       ${f.pix.startsWith('http') ? '🔗 Boleto' : '📋 PIX'}</button>` : '';
 
     return `<div class="fixa-item${f.paga?' paga':''}">
