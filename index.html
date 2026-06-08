@@ -133,6 +133,8 @@ input[type=file]{display:none}
 @keyframes spin{to{transform:rotate(360deg)}}
 .spin{animation:spin .8s linear infinite;display:inline-block}
 </style>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
 </head>
 <body>
 <div class="app">
@@ -185,6 +187,10 @@ input[type=file]{display:none}
         </details>
         <input type="text" id="webhook-url" placeholder="Cole aqui a URL do Web App..." style="margin-bottom:8px;font-size:12px">
         <button class="btn btn-p" style="flex:unset;padding:9px 18px;font-size:12px" onclick="saveWebhook()">✓ Salvar URL</button>
+      </div>
+      <div class="setup-card" id="fb-banner" style="background:#FFF3E0;border-color:#FFB74D">
+        <p>🔥 <strong>Firebase não configurado</strong> — os dados ficam só neste dispositivo.<br>Configure para sincronizar entre May e Daniel em qualquer celular.</p>
+        <button class="btn btn-p" style="flex:unset;padding:9px 18px;font-size:12px;background:#F57C00" onclick="showFbSetup()">⚙️ Configurar Firebase</button>
       </div>
       <div class="add-card">
         <h3><span class="ico">✏️</span> Lançamento manual</h3>
@@ -366,11 +372,52 @@ let uploadedBase64 = null;
 let uploadedFile = null;
 let editingId = null;
 let lastHash = '';
+let db = null;
+let unsubscribe = null;
 
-// URL já pré-configurada, banner oculto
 document.getElementById('setup-banner').style.display = 'none';
 document.getElementById('webhook-url').value = webhookUrl;
 localStorage.setItem(WH_KEY, webhookUrl);
+
+// ── FIREBASE CONFIG ──
+// Preencha com os dados do seu projeto Firebase:
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBkYfL8UJOT7OSAcmM74tw4iDHEdkAQYmI",
+  authDomain: "finduo-b21d5.firebaseapp.com",
+  projectId: "finduo-b21d5",
+  storageBucket: "finduo-b21d5.firebasestorage.app",
+  messagingSenderId: "605589480011",
+  appId: "1:605589480011:web:e6a91c70d17a1230ffe3ce"
+};
+
+function initFirebase(cfg) {
+  try {
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    else firebase.app();
+    db = firebase.firestore();
+    localStorage.setItem('finduo-fb-config', JSON.stringify(cfg));
+    return true;
+  } catch(e) { console.warn('Firebase init error:', e); return false; }
+}
+
+function showFbSetup() {
+  const existing = localStorage.getItem('finduo-fb-config');
+  const current = existing ? JSON.parse(existing) : {};
+  const apiKey = prompt('🔥 Firebase — Cole sua apiKey:', current.apiKey || '');
+  if (!apiKey) return;
+  const projectId = prompt('Firebase — projectId:', current.projectId || '');
+  if (!projectId) return;
+  const appId = prompt('Firebase — appId:', current.appId || '');
+  if (!appId) return;
+  const cfg = { apiKey, projectId, appId,
+    authDomain: projectId + '.firebaseapp.com',
+    storageBucket: projectId + '.appspot.com',
+    messagingSenderId: '000000000000' };
+  if (initFirebase(cfg)) {
+    alert('Firebase conectado! ✓ Recarregue a página.');
+    location.reload();
+  } else { alert('Erro ao conectar. Verifique os dados.'); }
+}
 
 function saveWebhook() {
   const url = document.getElementById('webhook-url').value.trim();
@@ -400,63 +447,66 @@ const months = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','A
 
 // ── STORAGE ──
 async function dbSave() {
-  const data = JSON.stringify(transactions);
-  try { await window.storage.set(DB_KEY, data, true); } catch(e){}
-  localStorage.setItem(DB_KEY, data);
+  localStorage.setItem(DB_KEY, JSON.stringify(transactions));
+  if (db) {
+    try {
+      await db.collection('finduo').doc('transactions').set({ data: transactions, updatedAt: Date.now() });
+    } catch(e) { console.warn('Firestore save error:', e); }
+  }
 }
 
 async function dbLoad() {
-  try {
-    const r = await window.storage.get(DB_KEY, true);
-    if (r && r.value) { const p = JSON.parse(r.value); if (Array.isArray(p)) return p; }
-  } catch(e){}
+  if (db) {
+    try {
+      const doc = await db.collection('finduo').doc('transactions').get();
+      if (doc.exists && Array.isArray(doc.data().data)) return doc.data().data;
+    } catch(e) { console.warn('Firestore load error:', e); }
+  }
   try { const l = localStorage.getItem(DB_KEY); if (l) return JSON.parse(l); } catch(e){}
   return [];
 }
 
 // ── SYNC ──
-let syncFailCount = 0;
-let syncInterval = null;
-
 async function startSync() {
   setSyncState('connecting');
-  transactions = await dbLoad();
-  lastHash = hash(transactions);
-  updateAll();
-  setSyncState('live');
-  // Poll every 3s, back off to 8s after 3 consecutive failures
-  function scheduleNext() {
-    const delay = syncFailCount >= 3 ? 8000 : 3000;
-    syncInterval = setTimeout(syncTick, delay);
-  }
-  async function syncTick() {
+
+  if (FIREBASE_CONFIG && initFirebase(FIREBASE_CONFIG)) {
+    // Firebase realtime listener
     try {
-      const remote = await dbLoad();
-      const rh = hash(remote);
-      if (rh !== lastHash) {
-        // Find who added/changed
-        const oldIds = new Set(transactions.map(t=>String(t.id)));
-        const newTxns = remote.filter(t=>!oldIds.has(String(t.id)));
-        transactions = remote;
-        lastHash = rh;
-        updateAll();
-        if (document.getElementById('tab-history').classList.contains('active')) renderHistory();
-        if (document.getElementById('tab-report').classList.contains('active')) renderReport();
-        // Toast for partner updates
-        if (newTxns.length) {
-          const partner = newTxns[0].user === currentUser ? null : newTxns[0].user;
-          if (partner) showToast(`${partner} adicionou ${newTxns.length > 1 ? newTxns.length + ' lançamentos' : '"' + newTxns[0].description + '"'} 🔄`);
-        }
-      }
+      transactions = await dbLoad();
+      lastHash = hash(transactions);
+      updateAll();
       setSyncState('live');
-      syncFailCount = 0;
-    } catch(e) {
-      syncFailCount++;
-      if (syncFailCount >= 3) setSyncState('offline');
-    }
-    scheduleNext();
+
+      unsubscribe = db.collection('finduo').doc('transactions')
+        .onSnapshot(doc => {
+          if (!doc.exists) return;
+          const remote = doc.data().data;
+          if (!Array.isArray(remote)) return;
+          const rh = hash(remote);
+          if (rh === lastHash) return;
+          const oldIds = new Set(transactions.map(t=>String(t.id)));
+          const newTxns = remote.filter(t=>!oldIds.has(String(t.id)));
+          transactions = remote;
+          lastHash = rh;
+          updateAll();
+          if (document.getElementById('tab-history').classList.contains('active')) renderHistory();
+          if (document.getElementById('tab-report').classList.contains('active')) renderReport();
+          if (newTxns.length) {
+            const partner = newTxns[0].user === currentUser ? null : newTxns[0].user;
+            if (partner) showToast(`${partner} adicionou ${newTxns.length > 1 ? newTxns.length + ' lançamentos' : '"' + newTxns[0].description + '"'} 🔄`);
+          }
+          setSyncState('live');
+        }, err => { console.warn('Firestore listener error:', err); setSyncState('offline'); });
+    } catch(e) { setSyncState('offline'); }
+  } else {
+    // Sem Firebase: usa localStorage apenas
+    transactions = await dbLoad();
+    lastHash = hash(transactions);
+    updateAll();
+    setSyncState('offline');
+    showToast('⚠️ Configure o Firebase para sync entre dispositivos');
   }
-  scheduleNext();
 }
 
 // ── TOAST ──
@@ -815,6 +865,10 @@ function exportCSV() {
 
 // ── INIT ──
 setToday();
+if (localStorage.getItem('finduo-fb-config')) {
+  const el = document.getElementById('fb-banner');
+  if (el) el.style.display = 'none';
+}
 startSync();
 </script>
 </body>
